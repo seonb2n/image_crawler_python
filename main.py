@@ -33,7 +33,7 @@ def setChromeDriver():
     # delete the zip file downloaded above
     os.remove(latest_driver_zip)
 
-def login(id, pw, nickname):
+def login(id, pw, nicknames):
     setChromeDriver()
     driver = webdriver.Chrome(os.getcwd() + 'chromedriver.exe')
     driver.get("https://www.instagram.com/")
@@ -45,7 +45,8 @@ def login(id, pw, nickname):
     login_btn = login_form.find_elements(By.TAG_NAME, "button")[1]
     login_btn.click()
     time.sleep(10)
-    crawling(driver, nickname)
+    for i in nicknames :
+        crawling(driver, i)
 
 def crawling(driver, accountName):
     driver.get("https://www.instagram.com/" + accountName + '/')
@@ -53,9 +54,11 @@ def crawling(driver, accountName):
     imgs = driver.find_elements(By.TAG_NAME, "img")
     print(imgs)
 
+
 if __name__ == '__main__':
     USER_ID = input("로그인할 ID 를 입력하세요.")
     USER_PW = input("로그인할 PW 를 입력하세요.")
-    USER_ACCOUNT = input("검색할 계정명을 입력하세요")
-    login(USER_ID, USER_PW, USER_ACCOUNT)
+    USER_ACCOUNTS = input("검색할 계정명을 입력하세요")
+    USER_ACCOUNTS = USER_ACCOUNTS.split(',')
+    login(USER_ID, USER_PW, USER_ACCOUNTS)
 
