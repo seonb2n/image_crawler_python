@@ -1,36 +1,27 @@
-import pandas as pd
-import numpy as np
-import wget
-from selenium import webdriver
-from selenium.webdriver import ActionChains as AC
-from selenium.webdriver.common.by import By
-from tqdm import tqdm
-from tqdm import tqdm_notebook
-import re
-from time import sleep
+import base64
+import json
+import os
 import time
 import zipfile
+from typing import List
+
 import requests
-import io
-import os
-from bs4 import BeautifulSoup
+import requests as r
+import wget
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+
+HUGGING_FACE_ACCESS_TONE = ""
+ENDPOINT_URL = "https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32"
 
 def setChromeDriver():
-    # get the latest chrome driver version number
     url = 'https://chromedriver.storage.googleapis.com/LATEST_RELEASE'
     response = requests.get(url)
     version_number = response.text
-
-    # build the donwload url
     download_url = "https://chromedriver.storage.googleapis.com/" + version_number + "/chromedriver_win32.zip"
-
-    # download the zip file using the url built above
     latest_driver_zip = wget.download(download_url, 'chromedriver.zip')
-
-    # extract the zip file
     with zipfile.ZipFile(latest_driver_zip, 'r') as zip_ref:
-        zip_ref.extractall(os.getcwd())  # you can specify the destination folder path here
-    # delete the zip file downloaded above
+        zip_ref.extractall(os.getcwd())
     os.remove(latest_driver_zip)
 
 def login(id, pw, nicknames):
@@ -51,11 +42,54 @@ def login(id, pw, nicknames):
 def crawling(driver, accountName):
     driver.get("https://www.instagram.com/" + accountName + '/')
     time.sleep(10)
-    imgs = driver.find_elements(By.TAG_NAME, "img")
-    print(imgs)
+    SCROLL_PAUSE_TIME = 1.0
+    # 하단부까지 스크롤링
+    last_height = driver.execute_script("return document.body.scrollHeight")
+    while True:
+        # Scroll down to bottom
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        # Wait to load page
+        time.sleep(SCROLL_PAUSE_TIME)
+        # Calculate new scroll height and compare with last scroll height
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
 
+    imgs = driver.find_elements(By.TAG_NAME, "img")
+    img_list_size = len(imgs)
+    for i in range (4, img_list_size-1) :
+        img = imgs[i]
+        img_src = img.get_attribute("src")
+        classify(img_src)
+
+
+def classify(img) :
+    result = ''
+    result = predict(img, ['selfie', 'food', 'friends', 'workout'])
+    if result is not None:
+        print(result[0]['label'] + " : " + str(result[0]['score']))
+
+
+def predict(path_to_image: str = None, candiates: List[str] = None):
+    response = requests.get(path_to_image).content
+    b64 = base64.b64encode(response)
+    # payload = {"inputs": {"image": b64.decode("utf-8"), "candiates": candiates}}
+    payload = {"image": b64.decode("utf-8"), "parameters": {"candidate_labels" : candiates}}
+    response = r.post(
+        ENDPOINT_URL, headers={"Authorization": "Bearer " + HUGGING_FACE_ACCESS_TONE}, json=payload
+    )
+    if (response.ok) :
+        return response.json()
+    else :
+        print(response)
 
 if __name__ == '__main__':
+    secret_file = os.path.join("./", 'secrets.json')
+    with (open(secret_file)) as f:
+        secrets = json.loads(f.read())
+    HUGGING_FACE_ACCESS_TONE = secrets['HUGGING_FACE_TOKEN']
+    print(">>> HG 토큰 : " + HUGGING_FACE_ACCESS_TONE)
     USER_ID = input("로그인할 ID 를 입력하세요.")
     USER_PW = input("로그인할 PW 를 입력하세요.")
     USER_ACCOUNTS = input("검색할 계정명을 입력하세요")
