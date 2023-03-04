@@ -43,7 +43,11 @@ def login(id, pw, nicknames):
 def crawling(driver, accountName):
     driver.get("https://www.instagram.com/" + accountName + '/')
     time.sleep(10)
-    SCROLL_PAUSE_TIME = 1.0
+    # 게시물 더 보기 버튼 클릭
+    buttons = driver.find_elements(By.TAG_NAME, "button")
+    if buttons.size > 5 :
+        buttons[5].click()
+    SCROLL_PAUSE_TIME = 2.0
     # 하단부까지 스크롤링
     last_height = driver.execute_script("return document.body.scrollHeight")
     while True:
@@ -89,6 +93,7 @@ if __name__ == '__main__':
     secret_file = os.path.join("./", 'secrets.json')
     with (open(secret_file)) as f:
         secrets = json.loads(f.read())
+
     tag_file = os.path.join("./", "IMAGE_TAG.txt")
     with (open(tag_file)) as f:
         for line in f:
