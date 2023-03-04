@@ -13,6 +13,7 @@ from selenium.webdriver.common.by import By
 
 HUGGING_FACE_ACCESS_TONE = ""
 ENDPOINT_URL = "https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32"
+IMAGE_TAGS = []
 
 def setChromeDriver():
     url = 'https://chromedriver.storage.googleapis.com/LATEST_RELEASE'
@@ -66,7 +67,7 @@ def crawling(driver, accountName):
 
 def classify(img) :
     result = ''
-    result = predict(img, ['selfie', 'food', 'friends', 'workout'])
+    result = predict(img, IMAGE_TAGS)
     if result is not None:
         print(result[0]['label'] + " : " + str(result[0]['score']))
 
@@ -88,6 +89,11 @@ if __name__ == '__main__':
     secret_file = os.path.join("./", 'secrets.json')
     with (open(secret_file)) as f:
         secrets = json.loads(f.read())
+    tag_file = os.path.join("./", "IMAGE_TAG.txt")
+    with (open(tag_file)) as f:
+        for line in f:
+            line = line.strip('\n')
+            IMAGE_TAGS.append(line)
     HUGGING_FACE_ACCESS_TONE = secrets['HUGGING_FACE_TOKEN']
     print(">>> HG 토큰 : " + HUGGING_FACE_ACCESS_TONE)
     USER_ID = input("로그인할 ID 를 입력하세요.")
